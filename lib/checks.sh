@@ -1,3 +1,38 @@
+#!/usr/bin/env bash
+
+# Environment checks and package installation.
+
+check_termux_environment() {
+  mkdir -p "$TERMUX_X_HOME" "$TERMUX_X_LOG_DIR" "$TERMUX_X_HOME/cache"
+
+  if [ -z "${PREFIX:-}" ]; then
+    log_warn "PREFIX is empty. This may not be Termux. Continuing anyway."
+  else
+    log_info "PREFIX=$PREFIX"
+  fi
+
+  if ! command -v pkg >/dev/null 2>&1; then
+    log_error "pkg command not found. This installer is designed for Termux."
+    return 1
+  fi
+
+  if ! command -v apt-get >/dev/null 2>&1; then
+    log_error "apt-get command not found."
+    return 1
+  fi
+
+  if [ "$(id -u 2>/dev/null)" = "0" ]; then
+    log_warn "Running as root is not recommended. Termux-X is designed for non-root Termux."
+  fi
+
+  if ! command -v bash >/dev/null 2>&1; then
+    log_error "bash command not found."
+    return 1
+  fi
+
+  return 0
+}
+
 run_apt_noninteractive() {
   local description="$1"
   shift
@@ -26,9 +61,10 @@ repair_pending_dpkg() {
 
   log_info "Checking pending dpkg configuration..."
 
-  yes '' | DEBIAN_FRONTEND=noninteractive dpkg --configure -a \
+  yes '' | DEBIAN_FRONTEND=noninteractive dpkg \
     --force-confdef \
     --force-confold \
+    --configure -a \
     >> "$LOG_FILE" 2>&1
 
   local status="${PIPESTATUS[1]}"
@@ -42,17 +78,12 @@ repair_pending_dpkg() {
 }
 
 update_termux_packages() {
-  if ! command -v apt-get >/dev/null 2>&1; then
-    log_error "apt-get command not available."
-    return 1
-  fi
-
   local status=0
 
   repair_pending_dpkg
   [ $? -ne 0 ] && status=1
 
-  run_apt_noninteractive "apt-get update" update -y
+  run_apt_noninteractive "apt-get update" update
   [ $? -ne 0 ] && status=1
 
   run_apt_noninteractive "apt-get upgrade" upgrade -y
@@ -63,6 +94,7 @@ update_termux_packages() {
 
 install_base_ui_dependencies() {
   local status=0
+  local optional_pkg
 
   repair_pending_dpkg
   [ $? -ne 0 ] && status=1
@@ -70,10 +102,13 @@ install_base_ui_dependencies() {
   run_apt_noninteractive "install required packages" install -y zsh git curl
   [ $? -ne 0 ] && status=1
 
-  run_apt_noninteractive "install optional visual packages" install -y figlet toilet ncurses-utils
-  if [ $? -ne 0 ]; then
-    log_warn "Optional visual packages failed to install. Continuing without them."
-  fi
+  for optional_pkg in figlet toilet ncurses-utils; do
+    run_apt_noninteractive "install optional package: $optional_pkg" install -y "$optional_pkg"
+
+    if [ $? -ne 0 ]; then
+      log_warn "Optional package failed to install: $optional_pkg. Continuing."
+    fi
+  done
 
   return "$status"
 }

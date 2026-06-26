@@ -30,17 +30,11 @@ apply_cyberpunk_theme() {
 }
 
 configure_termux_extra_keys() {
-  mkdir -p "$HOME/.termux"
+  log_info "Keeping Termux default extra keys."
 
-  backup_file "$HOME/.termux/termux.properties"
-  cp "$TERMUX_X_SOURCE_DIR/assets/termux.properties" "$HOME/.termux/termux.properties" >> "$LOG_FILE" 2>&1
-  local status=$?
+  # Termux-X no longer applies custom extra keys.
+  # This step intentionally does not modify:
+  # ~/.termux/termux.properties
 
-  if command -v termux-reload-settings >/dev/null 2>&1; then
-    run_logged "reload Termux settings after extra keys update" termux-reload-settings
-  else
-    log_warn "termux-reload-settings not found. Extra keys will apply after Termux restart."
-  fi
-
-  return "$status"
+  return 0
 }
