@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Termux-X
-# Cyberpunk UI customizer for fresh Termux installations.
+# Cyberpunk mobile workstation for fresh Termux installations.
 # Designed to continue on non-fatal errors and save logs for troubleshooting.
 
 set +e
@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export TERMUX_X_SOURCE_DIR="$SCRIPT_DIR"
 export TERMUX_X_HOME="${TERMUX_X_HOME:-$HOME/.termux-x}"
 export TERMUX_X_LOG_DIR="$TERMUX_X_HOME/logs"
-export TERMUX_X_STEP_TOTAL=8
+export TERMUX_X_STEP_TOTAL=9
 export TERMUX_X_STEP_CURRENT=0
 
 # shellcheck source=lib/ui.sh
@@ -19,6 +19,8 @@ source "$SCRIPT_DIR/lib/ui.sh"
 source "$SCRIPT_DIR/lib/logger.sh"
 # shellcheck source=lib/checks.sh
 source "$SCRIPT_DIR/lib/checks.sh"
+# shellcheck source=lib/workstation.sh
+source "$SCRIPT_DIR/lib/workstation.sh"
 # shellcheck source=lib/theme.sh
 source "$SCRIPT_DIR/lib/theme.sh"
 # shellcheck source=lib/plugins.sh
@@ -61,11 +63,16 @@ main() {
   run_step "Checking Termux environment" check_termux_environment
   run_step "Updating packages" update_termux_packages
   run_step "Installing base UI dependencies" install_base_ui_dependencies
+  run_step "Installing mobile workstation pack" install_mobile_workstation_pack
   run_step "Applying cyberpunk color scheme" apply_cyberpunk_theme
-  run_step "Configuring Termux extra keys" configure_termux_extra_keys
+  run_step "Keeping Termux default extra keys" configure_termux_extra_keys
   run_step "Installing Zsh UX plugins" install_zsh_ux_plugins
   run_step "Building Termux-X shell profile" build_termux_x_shell_profile
   run_step "Finalizing setup" finalize_termux_x
+
+  if [ "${TERMUX_X_TEMP_INSTALL:-0}" = "1" ]; then
+    log_info "Temporary install mode enabled. Source files are handled by bootstrap cleanup."
+  fi
 
   ui_finish "$LOG_FILE"
 }

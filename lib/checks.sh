@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Environment checks and package installation.
+# Environment checks and base package installation.
 
 check_termux_environment() {
   mkdir -p "$TERMUX_X_HOME" "$TERMUX_X_LOG_DIR" "$TERMUX_X_HOME/cache"
@@ -99,11 +99,11 @@ install_base_ui_dependencies() {
   repair_pending_dpkg
   [ $? -ne 0 ] && status=1
 
-  run_apt_noninteractive "install required packages" install -y zsh git curl
+  run_apt_noninteractive "install required base packages" install -y zsh git curl
   [ $? -ne 0 ] && status=1
 
   for optional_pkg in figlet toilet ncurses-utils; do
-    run_apt_noninteractive "install optional package: $optional_pkg" install -y "$optional_pkg"
+    run_apt_noninteractive "install optional visual package: $optional_pkg" install -y "$optional_pkg"
 
     if [ $? -ne 0 ]; then
       log_warn "Optional package failed to install: $optional_pkg. Continuing."

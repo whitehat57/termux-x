@@ -92,12 +92,22 @@ finalize_termux_x() {
   cat > "$TERMUX_X_HOME/README.txt" <<EOF2
 Termux-X installed.
 
+Profile:
+- Cyberpunk mobile workstation
+- Zsh shell profile
+- Autosuggestions
+- Syntax highlighting
+- Python, Go, and Node.js runtime
+- Ranger, nnn, and modern CLI tools
+
 Files:
 - $HOME/.zshrc
 - $HOME/.bashrc
 - $HOME/.termux/colors.properties
-- $HOME/.termux/termux.properties
 - $TERMUX_X_HOME
+
+Extra keys:
+- Termux default
 
 Latest log:
 - $TERMUX_X_LOG_DIR/latest.log
