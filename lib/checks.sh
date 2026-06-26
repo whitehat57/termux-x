@@ -1,27 +1,40 @@
-#!/usr/bin/env bash
+run_apt_noninteractive() {
+  local description="$1"
+  shift
 
-# Environment checks and package installation.
+  log_info "RUN: $description"
+  printf '\n$ DEBIAN_FRONTEND=noninteractive apt-get %s\n' "$*" >> "$LOG_FILE"
 
-check_termux_environment() {
-  mkdir -p "$TERMUX_X_HOME" "$TERMUX_X_LOG_DIR" "$TERMUX_X_HOME/cache"
+  yes '' | DEBIAN_FRONTEND=noninteractive apt-get "$@" \
+    -o Dpkg::Options::="--force-confdef" \
+    -o Dpkg::Options::="--force-confold" \
+    >> "$LOG_FILE" 2>&1
 
-  if [ -z "${PREFIX:-}" ]; then
-    log_warn "PREFIX is empty. This may not be Termux. Continuing anyway."
-  else
-    log_info "PREFIX=$PREFIX"
+  local status="${PIPESTATUS[1]}"
+
+  if [ "$status" -ne 0 ]; then
+    log_warn "Command failed: $description | exit_code=$status"
   fi
 
-  if ! command -v pkg >/dev/null 2>&1; then
-    log_error "pkg command not found. This installer is designed for Termux."
-    return 1
+  return "$status"
+}
+
+repair_pending_dpkg() {
+  if ! command -v dpkg >/dev/null 2>&1; then
+    return 0
   fi
 
-  if [ "$(id -u 2>/dev/null)" = "0" ]; then
-    log_warn "Running as root is not recommended. Termux-X is designed for non-root Termux."
-  fi
+  log_info "Checking pending dpkg configuration..."
 
-  if ! command -v bash >/dev/null 2>&1; then
-    log_error "bash command not found."
+  yes '' | DEBIAN_FRONTEND=noninteractive dpkg --configure -a \
+    --force-confdef \
+    --force-confold \
+    >> "$LOG_FILE" 2>&1
+
+  local status="${PIPESTATUS[1]}"
+
+  if [ "$status" -ne 0 ]; then
+    log_warn "dpkg repair returned exit code $status"
     return 1
   fi
 
@@ -29,32 +42,35 @@ check_termux_environment() {
 }
 
 update_termux_packages() {
-  if ! command -v pkg >/dev/null 2>&1; then
-    log_error "pkg command not available."
+  if ! command -v apt-get >/dev/null 2>&1; then
+    log_error "apt-get command not available."
     return 1
   fi
 
-  run_logged "pkg update" pkg update -y
-  local update_status=$?
+  local status=0
 
-  run_logged "pkg upgrade" pkg upgrade -y
-  local upgrade_status=$?
+  repair_pending_dpkg
+  [ $? -ne 0 ] && status=1
 
-  if [ "$update_status" -ne 0 ] || [ "$upgrade_status" -ne 0 ]; then
-    return 1
-  fi
+  run_apt_noninteractive "apt-get update" update -y
+  [ $? -ne 0 ] && status=1
 
-  return 0
+  run_apt_noninteractive "apt-get upgrade" upgrade -y
+  [ $? -ne 0 ] && status=1
+
+  return "$status"
 }
 
 install_base_ui_dependencies() {
   local status=0
 
-  run_logged "install required packages" pkg install -y zsh git curl
+  repair_pending_dpkg
   [ $? -ne 0 ] && status=1
 
-  # Optional visual tools. Failure is logged but does not fail the whole step.
-  run_logged "install optional visual packages" pkg install -y figlet toilet ncurses-utils
+  run_apt_noninteractive "install required packages" install -y zsh git curl
+  [ $? -ne 0 ] && status=1
+
+  run_apt_noninteractive "install optional visual packages" install -y figlet toilet ncurses-utils
   if [ $? -ne 0 ]; then
     log_warn "Optional visual packages failed to install. Continuing without them."
   fi
