@@ -3,7 +3,7 @@
 set +e
 set -u
 
-REPO_TARBALL_URL="${TERMUX_X_REPO_TARBALL_URL:-https://github.com/USERNAME/termux-x/archive/refs/heads/main.tar.gz}"
+REPO_TARBALL_URL="${TERMUX_X_REPO_TARBALL_URL:-https://github.com/whitehat57/termux-x/archive/refs/heads/main.tar.gz}"
 
 TMP_DIR="$(mktemp -d)"
 LOG_PREFIX="[Termux-X Bootstrap]"

@@ -50,7 +50,7 @@ Setelah selesai, restart Termux.
 ## Cara Install via GitHub
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/USERNAME/termux-x/main/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/whitehat57/termux-x/main/bootstrap.sh | bash
 
 ## File yang Diubah
 
